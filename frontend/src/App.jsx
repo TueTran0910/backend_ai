@@ -22,6 +22,8 @@ function App() {
     gender: 'Nam'
   });
 
+  const api = "https://backend-ai-rbej.onrender.com"
+
   // =========================
   // HANDLE INPUT
   // =========================
@@ -149,7 +151,7 @@ function App() {
 
       // call Flask
       const response = await axios.post(
-        'http://localhost:5000/api/analyze',
+        `${api}/api/analyze`,
         {
           imageBase64: base64String,
           userProfile: userProfile
