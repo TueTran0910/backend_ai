@@ -11,6 +11,8 @@ function App() {
   const [progress, setProgress] = useState(0);
 
   const [nutrition, setNutrition] = useState(null);
+  const [history, setHistory] = useState(JSON.parse(localStorage.getItem('scanHistory') || '[]'));
+  const [selectedHistoryItem, setSelectedHistoryItem] = useState(null);
 
   // =========================
   // USER PROFILE
@@ -34,6 +36,23 @@ function App() {
       [e.target.name]: e.target.value
     });
   };
+
+  // Hàm lưu kết quả vào lịch sử
+  const saveToHistory = (newResult) => {
+    const newEntry = {
+      ...newResult,
+      // Tạo ID duy nhất bằng thời gian thực cộng với số ngẫu nhiên
+      id: Date.now() + Math.random(), 
+      timestamp: new Date().toLocaleString()
+    };
+
+    const updatedHistory = [newEntry, ...history].slice(0, 10);
+    
+    setHistory(updatedHistory);
+    localStorage.setItem('scanHistory', JSON.stringify(updatedHistory));
+  };
+
+
 
   // =========================
   // OFFLINE PARSER
@@ -166,10 +185,14 @@ function App() {
       console.log("DATA:", response.data);
 
       // success
-      setNutrition({
+      const nutritionData = {
         ...response.data,
         isOffline: false
-      });
+      };
+
+      // 3. Cập nhật giao diện và lưu vào lịch sử
+      setNutrition(nutritionData);
+      saveToHistory(nutritionData);
 
       setLoading(false);
 
@@ -210,6 +233,8 @@ function App() {
 
         setNutrition(offlineData);
 
+        saveToHistory(offlineData);
+
         setLoading(false);
 
       }).catch((ocrError) => {
@@ -220,6 +245,26 @@ function App() {
 
         setLoading(false);
       });
+    }
+  };
+
+  // Hàm xóa đơn lẻ từng mục
+  const deleteHistoryItem = (id, e) => {
+    // Ngăn sự kiện click lan ra ngoài để không bị mở Popup chi tiết
+    if (e) e.stopPropagation();
+
+    if (window.confirm("Bạn có chắc muốn XÓA mục này khỏi nhật ký?")) {
+      const updatedHistory = history.filter(item => item.id !== id);
+      setHistory(updatedHistory);
+      localStorage.setItem('scanHistory', JSON.stringify(updatedHistory));
+    }
+  };
+
+  // Hàm xóa toàn bộ lịch sử
+  const clearAllHistory = () => {
+    if (window.confirm("Bạn có chắc chắn muốn XÓA toàn bộ lịch sử quét?")) {
+      setHistory([]);
+      localStorage.removeItem('scanHistory');
     }
   };
 
@@ -301,12 +346,31 @@ function App() {
             </div>
 
             <div className="grid grid-cols-3 gap-2">
-              {Object.entries(nutrition.stats).map(([key, val], i) => (
-                <div key={i} className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center justify-center">
+              {Object.entries(nutrition.stats).map(([key, val]) => (
+                <div key={key} className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center justify-center">
                   <p className="text-[10px] font-black text-slate-400 whitespace-normal break-words mb-1">{key}</p>
                   <p className="text-[12px] font-black text-slate-800 whitespace-normal break-words w-full text-center leading-none">{val}</p>
                 </div>
               ))}
+            </div>
+
+            <div className="bg-white p-5 rounded-[2rem] border border-green-100 shadow-sm mt-4">
+              <h3 className="text-[10px] font-black text-green-600 uppercase mb-3 border-b border-green-100 pb-1 flex items-center">
+                <span className="mr-1">🏃</span> Vận động để tiêu thụ:
+              </h3>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { icon: "🚶", label: "Đi bộ", val: nutrition.exercise_conversion?.walking },
+                  { icon: "🏃", label: "Chạy bộ", val: nutrition.exercise_conversion?.running },
+                  { icon: "🚴", label: "Đạp xe", val: nutrition.exercise_conversion?.cycling }
+                ].map((ex, i) => (
+                  <div key={i} className="text-center bg-slate-50 p-2 rounded-xl">
+                    <div className="text-lg">{ex.icon}</div>
+                    <p className="text-[10px] font-black text-black">{ex.val || 'N/A'}</p>
+                    <p className="text-[7px] font-bold text-slate-400 uppercase">{ex.label}</p>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Khối Tư Vấn Cá Nhân */}
@@ -341,10 +405,146 @@ function App() {
         )}
       </div>
 
+      {history.length > 0 && (
+        <div className="mt-20 w-full max-w-md px-2 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="bg-white/40 backdrop-blur-sm rounded-[2.5rem] p-6 border border-slate-200/50 shadow-sm">
+            <h3 className="text-[12px] font-black text-green-600 uppercase tracking-[0.4em] mb-6 text-center">
+              Nhật ký quét gần đây
+            </h3>
+            
+            <div className="space-y-3">
+              {history.map((item) => (
+                <div 
+                  key={item.id} 
+                  onClick={() => setSelectedHistoryItem(item)}
+                  className="group bg-white p-5 rounded-[2rem] flex justify-between items-center border border-slate-50 transition-all hover:border-slate-200 shadow-sm cursor-pointer active:scale-95 relative"
+                >
+                  {/* Nội dung bên trái */}
+                  <div className="flex-1 min-w-0 pr-10">
+                    <p className="text-[11px] font-black text-black uppercase leading-tight break-words">
+                      {item.product_name}
+                    </p>
+                    <p className="text-[8px] font-bold text-black/30 uppercase mt-1.5 tracking-wider">
+                      {item.timestamp}
+                    </p>
+                  </div>
+                  
+                  {/* Cụm bên phải: Score và Nút xóa đơn lẻ */}
+                  <div className="flex items-center gap-4 flex-shrink-0">
+                    <div className="text-right">
+                      <div className="text-[14px] font-black text-green-600 leading-none">
+                        {item.health_score}
+                      </div>
+                      <div className="text-[7px] font-bold text-black/20 uppercase mt-1 tracking-tighter text-center">
+                        Score
+                      </div>
+                    </div>
+
+                    {/* Nút xóa từng cái */}
+                    <button 
+                      onClick={(e) => deleteHistoryItem(item.id, e)}
+                      className="p-2 -mr-2 text-black/10 hover:text-red-500 transition-colors"
+                      title="Xóa mục này"
+                    >
+                      <span className="text-xs">✕</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Nút xóa toàn bộ */}
+            <button 
+              onClick={clearAllHistory}
+              className="w-full mt-10 py-2 text-[9px] font-black text-black/20 uppercase tracking-[0.3em] hover:text-red-500 transition-colors"
+            >
+              — Xóa toàn bộ lịch sử! —
+            </button>
+          </div>     
+        </div>
+      )}
+
+      {/* POPUP CHI TIẾT LỊCH SỬ */}
+      {selectedHistoryItem && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm overflow-y-auto"
+          onClick={() => setSelectedHistoryItem(null)} // Nhấn ra ngoài để đóng
+        >
+          {/* Khối chứa nội dung - Thêm max-h và overflow-y-auto để cuộn được */}
+          <div 
+            className="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative my-auto animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()} // Ngăn việc đóng khi nhấn vào bên trong popup
+          >
+            
+            {/* Nút đóng cố định ở góc */}
+            <button 
+              onClick={() => setSelectedHistoryItem(null)}
+              className="absolute top-6 right-6 text-black/20 hover:text-black transition-colors z-10"
+            >
+              <span className="text-2xl">✕</span>
+            </button>
+
+            <header className="text-center mb-8">
+              <p className="text-[10px] font-black text-black/40 uppercase tracking-[0.4em] mb-2">Chi tiết nhật ký</p>
+              <h2 className="text-xl font-black text-black uppercase leading-tight break-words">
+                {selectedHistoryItem.product_name}
+              </h2>
+              <p className="text-[10px] font-bold text-black/20 mt-2">{selectedHistoryItem.timestamp}</p>
+            </header>
+
+            {/* Grid thông số - Giống Dashboard chính */}
+            <div className="grid grid-cols-3 gap-3 mb-8">
+              {Object.entries(selectedHistoryItem.stats).map(([key, val]) => (
+                <div key={key} className="bg-slate-50 p-3 rounded-2xl text-center border border-slate-100">
+                  <p className="text-[8px] font-black text-black/30 uppercase mb-1">{key}</p>
+                  <p className="text-[10px] font-black text-black leading-tight break-words">{val}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Phần Tư vấn chi tiết (như trong ảnh bạn gửi) */}
+            <div className="space-y-6">
+              <div className="p-6 bg-blue-50/50 rounded-[2rem] border border-blue-100">
+                <h3 className="text-[10px] font-black text-blue-600 uppercase mb-4 tracking-widest border-b border-blue-100 pb-2">
+                  🧑‍⚕️ Tư vấn sức khỏe
+                </h3>
+                <ul className="space-y-3">
+                  {selectedHistoryItem.short_advice.map((adv, i) => (
+                    <li key={i} className="text-[12px] font-medium text-slate-700 leading-relaxed">
+                      • {adv}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Gợi ý thay thế */}
+              <div className="p-6 bg-orange-50/50 rounded-[2rem] border border-orange-100">
+                <h3 className="text-[10px] font-black text-orange-600 uppercase mb-4 tracking-widest border-b border-orange-100 pb-2">
+                  💡 Giải pháp thay thế
+                </h3>
+                <ul className="space-y-2">
+                  {selectedHistoryItem.alternatives?.map((alt, i) => (
+                    <li key={i} className="text-[12px] font-medium text-slate-700 leading-tight flex items-start">
+                      <span className="text-orange-500 mr-2">»</span> {alt}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <button 
+              onClick={() => setSelectedHistoryItem(null)}
+              className="w-full mt-10 py-5 bg-black text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-transform"
+            >
+              Quay lại nhật ký
+            </button>
+          </div>
+        </div>
+      )}
+
       <footer className="mt-10 pb-12 w-full text-center border-t border-slate-100/80 pt-10">
         <div className="flex flex-col items-center space-y-1.5">
           
-          {/* Tên thành viên và MSSV - Chữ mảnh, dãn cách rộng */}
           <div className="text-[15px] font-black text-slate-400 uppercase tracking-widest">
             Trần Thiên Tuệ • DH52201727 • D22_TH10
           </div>
@@ -353,7 +553,6 @@ function App() {
             Lê Hoàng Minh Trí • DH52201618 • D22_TH10
           </div>
 
-          {/* Thông tin Lớp và Trường - Để chữ mờ hơn (slate-300) và dãn cách cực rộng để tạo chiều sâu */}
           <div className="pt-4 text-[12px] font-bold text-black uppercase tracking-[0.4em]">
             Trường Đại Học Công Nghệ Sài Gòn - AI cơ bản và ứng dụng
           </div>

@@ -77,6 +77,10 @@ def analyze_food():
             "product_name": "Tên sản phẩm",
             "stats": {{"calories": "...", "sugar": "...", "protein": "...", "calcium": "...", "fat": "...", "carb": "..."}},
             "health_score": "1-10",
+            "exercise_conversion": {{
+                "walking": "Số phút đi bộ",
+                "running": "Số phút chạy bộ",
+                "cycling": "Số phút đạp xe" }},
             "short_advice": ["Lời khuyên 1 (đối chiếu thể trạng)", "Lời khuyên 2"],
             "alternatives": ["Món thay thế"]
         }}
