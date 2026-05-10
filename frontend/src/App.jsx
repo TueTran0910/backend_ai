@@ -22,7 +22,8 @@ function App() {
     gender: 'Nam'
   });
 
-  const api = "https://backend-ai-rbej.onrender.com"
+  //const api = "https://backend-ai-rbej.onrender.com"
+  const api = "http://127.0.0.1:5000";
 
   // =========================
   // HANDLE INPUT
@@ -227,261 +228,138 @@ function App() {
   // =========================
   return (
     <div className="min-h-screen bg-slate-100 p-4 flex flex-col items-center font-sans pb-10">
-
       <div className="w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl p-6 border border-white">
-
-        {/* HEADER */}
         <header className="text-center mb-6">
-          <h1 className="text-3xl font-black italic text-slate-900 leading-none">
-            NUTRITION <span className="text-green-500">AI</span>
-          </h1>
-
-          <p className="text-[10px] font-bold text-slate-400 tracking-[0.3em] uppercase mt-1">
-            Personal Dietitian v4.0
-          </p>
+          <h1 className="text-3xl font-black italic text-slate-900 leading-none">NUTRITION <span className="text-green-500">AI</span></h1>
+          <p className="text-[10px] font-bold text-slate-400 tracking-[0.3em] uppercase mt-1">Personal Dietitian v4.0</p>
         </header>
 
-        {/* PROFILE */}
+        {/* Bảng nhập thông số thể trạng */}
         <div className="bg-slate-50 p-4 rounded-2xl mb-6 border border-slate-100">
-
-          <h3 className="text-[10px] font-black text-slate-500 uppercase mb-3 tracking-widest">
-            Thông số thể trạng
-          </h3>
-
+          <h3 className="text-[10px] font-black text-slate-500 uppercase mb-3 tracking-widest">Thông số thể trạng</h3>
           <div className="grid grid-cols-2 gap-3">
-
-            <input
-              type="number"
-              name="age"
-              value={userProfile.age}
-              onChange={handleInputChange}
-              placeholder="Tuổi"
-              className="p-2 text-sm font-bold border rounded-xl"
-            />
-
-            <select
-              name="gender"
-              value={userProfile.gender}
-              onChange={handleInputChange}
-              className="p-2 text-sm font-bold border rounded-xl"
-            >
+            <input type="number" name="age" value={userProfile.age} onChange={handleInputChange} placeholder="Tuổi" className="p-2 text-sm font-bold border rounded-xl text-center outline-none focus:border-green-400" />
+            <select name="gender" value={userProfile.gender} onChange={handleInputChange} className="p-2 text-sm font-bold border rounded-xl text-center outline-none focus:border-green-400 bg-white">
               <option value="Nam">Nam</option>
               <option value="Nữ">Nữ</option>
             </select>
-
-            <input
-              type="number"
-              name="weight"
-              value={userProfile.weight}
-              onChange={handleInputChange}
-              placeholder="Cân nặng"
-              className="p-2 text-sm font-bold border rounded-xl"
-            />
-
-            <input
-              type="number"
-              name="height"
-              value={userProfile.height}
-              onChange={handleInputChange}
-              placeholder="Chiều cao"
-              className="p-2 text-sm font-bold border rounded-xl"
-            />
-
+            <div className="relative">
+              <input type="number" name="weight" value={userProfile.weight} onChange={handleInputChange} placeholder="Nặng" className="w-full p-2 text-sm font-bold border rounded-xl text-center outline-none focus:border-green-400" />
+              <span className="absolute right-3 top-2 text-xs text-slate-400 font-bold">kg</span>
+            </div>
+            <div className="relative">
+              <input type="number" name="height" value={userProfile.height} onChange={handleInputChange} placeholder="Cao" className="w-full p-2 text-sm font-bold border rounded-xl text-center outline-none focus:border-green-400" />
+              <span className="absolute right-3 top-2 text-xs text-slate-400 font-bold">cm</span>
+            </div>
           </div>
         </div>
 
-        {/* IMAGE */}
-        <div className="mb-6 relative aspect-video bg-slate-50 rounded-[2rem] border-4 border-dashed border-slate-200 flex items-center justify-center overflow-hidden">
-
-          <input
-            type="file"
-            accept="image/*"
-            className="absolute inset-0 opacity-0 z-10 cursor-pointer"
-
-            onChange={(e) => {
-
-              const file = e.target.files[0];
-
-              if (!file) return;
-
-              setImage(
-                URL.createObjectURL(file)
-              );
-
-              setImageFile(file);
-            }}
-          />
-
-          {
-            image
-              ? (
-                <img
-                  src={image}
-                  alt="preview"
-                  className="w-full h-full object-cover"
-                />
-              )
-              : (
-                <div className="text-center">
-                  <span className="text-4xl">📸</span>
-
-                  <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mt-2">
-                    Chụp nhãn sản phẩm
-                  </p>
-                </div>
-              )
+        {/* Khu vực ảnh */}
+        <div className="mb-6 relative aspect-video bg-slate-50 rounded-[2rem] border-4 border-dashed border-slate-200 flex flex-col items-center justify-center overflow-hidden group">
+          <input type="file" accept="image/*" className="absolute inset-0 opacity-0 z-10 cursor-pointer" onChange={(e) => {
+            setImage(URL.createObjectURL(e.target.files[0]));
+            setImageFile(e.target.files[0]); 
+          }} />
+          {image ? <img src={image} className="w-full h-full object-cover" alt="preview" /> : 
+            <div className="text-center">
+              <span className="text-4xl mb-2 block">📸</span>
+              <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Chụp nhãn dán đồ ăn / nước uống</p>
+            </div>
           }
-
         </div>
 
-        {/* BUTTON */}
-        <button
-          onClick={handleScan}
-          disabled={loading}
-          className={`w-full py-5 rounded-2xl font-black text-white uppercase tracking-widest shadow-lg transition-transform active:scale-95 ${
-            loading
-              ? 'bg-slate-400'
-              : 'bg-green-600 hover:bg-green-700'
-          }`}
-        >
-          {
-            loading
-              ? "ĐANG PHÂN TÍCH..."
-              : "QUÉT & PHÂN TÍCH"
-          }
-        </button>
-
-        {/* OCR PROGRESS */}
-        {
-          loading && progress > 0 && (
-            <div className="mt-4">
-
-              <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                <div
-                  className="bg-green-500 h-full"
-                  style={{
-                    width: `${progress}%`
-                  }}
-                />
-              </div>
-
-              <p className="text-[10px] text-center mt-2">
-                OCR: {progress}%
-              </p>
-
+        {/* Nút bấm & Thanh tiến trình */}
+        <div className="space-y-3">
+          <button onClick={handleScan} disabled={loading} className={`w-full py-5 rounded-2xl font-black text-white uppercase tracking-widest shadow-lg transition-transform active:scale-95 ${loading ? 'bg-slate-400' : 'bg-green-600 hover:bg-green-700'}`}>
+            {loading ? "BÁC SĨ AI ĐANG PHÂN TÍCH..." : "QUÉT & NHẬN TƯ VẤN"}
+          </button>
+          
+          {loading && progress > 0 && (
+            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+              <div className="bg-green-500 h-full transition-all duration-300" style={{ width: `${progress}%` }}></div>
+              <p className="text-[8px] text-center font-bold text-slate-400 mt-1">TIẾN ĐỘ TESSERACT: {progress}%</p>
             </div>
-          )
-        }
+          )}
+        </div>
 
-        {/* RESULT */}
-        {
-          nutrition && (
-
-            <div className="mt-8 space-y-4">
-
-              {/* MODE */}
-              <div className={`text-center py-2 rounded-full text-[10px] font-black uppercase ${
-                nutrition.isOffline
-                  ? 'bg-amber-100 text-amber-700'
-                  : 'bg-green-100 text-green-700'
-              }`}>
-                {
-                  nutrition.isOffline
-                    ? 'OFFLINE MODE'
-                    : 'AI MODE'
-                }
-              </div>
-
-              {/* PRODUCT */}
-              <div className="bg-slate-900 text-white p-5 rounded-[2rem]">
-
-                <p className="text-[10px] opacity-50 uppercase">
-                  Sản phẩm
-                </p>
-
-                <h2 className="text-xl font-black mt-1">
-                  {nutrition.product_name}
-                </h2>
-
-              </div>
-
-              {/* STATS */}
-              <div className="grid grid-cols-3 gap-2">
-
-                {
-                  Object.entries(
-                    nutrition.stats || {}
-                  ).map(([key, value]) => (
-
-                    <div
-                      key={key}
-                      className="bg-white p-3 rounded-2xl border"
-                    >
-                      <p className="text-[9px] uppercase text-slate-400 font-bold">
-                        {key}
-                      </p>
-
-                      <p className="text-sm font-black mt-1">
-                        {value}
-                      </p>
-                    </div>
-                  ))
-                }
-
-              </div>
-
-              {/* ADVICE */}
-              <div className="bg-blue-50 border border-blue-100 p-5 rounded-[2rem]">
-
-                <h3 className="font-black text-blue-700 mb-3">
-                  🧑‍⚕️ Tư vấn
-                </h3>
-
-                <ul className="space-y-2">
-
-                  {
-                    nutrition.short_advice?.map((item, index) => (
-                      <li key={index}>
-                        • {item}
-                      </li>
-                    ))
-                  }
-
-                </ul>
-
-              </div>
-
-              {/* ALTERNATIVES */}
-              <div className="bg-orange-50 border border-orange-100 p-5 rounded-[2rem]">
-
-                <h3 className="font-black text-orange-700 mb-3">
-                  💡 Gợi ý thay thế
-                </h3>
-
-                <ul className="space-y-2">
-
-                  {
-                    nutrition.alternatives?.map((item, index) => (
-                      <li key={index}>
-                        » {item}
-                      </li>
-                    ))
-                  }
-
-                </ul>
-
-              </div>
-
+        {/* Kết quả Dashboard */}
+        {nutrition && (
+          <div className="mt-8 space-y-4 animate-in fade-in zoom-in duration-500">
+            <div className={`text-center py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${nutrition.isOffline ? 'bg-amber-100 text-amber-600' : 'bg-green-100 text-green-600'}`}>
+              {nutrition.isOffline ? '● CHẾ ĐỘ NỘI BỘ (OFFLINE)' : '● TRỢ LÝ DINH DƯỠNG CÁ NHÂN HÓA'}
             </div>
-          )
-        }
 
+            <div className="bg-slate-900 p-5 rounded-[2rem] text-white flex justify-between items-start gap-3">
+              <div className="flex-1 max-w-[75%]">
+                <p className="text-[10x] opacity-40 font-bold uppercase mb-1 tracking-tighter">Sản phẩm nhận diện</p>
+                <h2 className="text-lg font-black leading-tight uppercase whitespace-normal break-words">{nutrition.product_name}</h2>
+              </div>
+              <div className="text-center border-l border-white/10 pl-4 flex-shrink-0">
+                <div className="text-2xl font-black text-green-400 leading-none">{nutrition.health_score}</div>
+                <div className="text-[8px] opacity-40 font-bold uppercase mt-1">Score</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              {Object.entries(nutrition.stats).map(([key, val], i) => (
+                <div key={i} className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center justify-center">
+                  <p className="text-[10px] font-black text-slate-400 whitespace-normal break-words mb-1">{key}</p>
+                  <p className="text-[12px] font-black text-slate-800 whitespace-normal break-words w-full text-center leading-none">{val}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Khối Tư Vấn Cá Nhân */}
+            <div className="bg-white p-5 rounded-[2rem] border border-blue-100 shadow-sm bg-blue-50/40">
+              <h3 className="text-[10px] font-black text-blue-600 uppercase mb-3 border-b border-blue-100 pb-1 flex items-center">
+                <span className="mr-1">🧑‍⚕️</span> Đánh giá theo thể trạng:
+              </h3>
+              <ul className="space-y-2">
+                {nutrition.short_advice.map((adv, i) => (
+                  <li key={i} className="text-[12px] font-medium text-slate-700 leading-tight">
+                    • {adv}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Khối Thực Phẩm Thay Thế */}
+            <div className="bg-white p-5 rounded-[2rem] border border-orange-100 shadow-sm bg-orange-50/40">
+              <h3 className="text-[10px] font-black text-orange-600 uppercase mb-3 border-b border-orange-100 pb-1 flex items-center">
+                <span className="mr-1">💡</span> Gợi ý món thay thế:
+              </h3>
+              <ul className="space-y-2">
+                {nutrition.alternatives?.map((alt, i) => (
+                  <li key={i} className="text-[12px] font-medium text-slate-700 leading-tight flex items-start">
+                    <span className="text-orange-500 mr-2">»</span> {alt}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            
+          </div>
+        )}
       </div>
 
-      <footer className="mt-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-        Trần Thiên Tuệ - STU
-      </footer>
+      <footer className="mt-10 pb-12 w-full text-center border-t border-slate-100/80 pt-10">
+        <div className="flex flex-col items-center space-y-1.5">
+          
+          {/* Tên thành viên và MSSV - Chữ mảnh, dãn cách rộng */}
+          <div className="text-[15px] font-black text-slate-400 uppercase tracking-widest">
+            Trần Thiên Tuệ • DH52201727 • D22_TH10
+          </div>
+          
+          <div className="text-[15px] font-black text-slate-400 uppercase tracking-widest">
+            Lê Hoàng Minh Trí • DH52201618 • D22_TH10
+          </div>
 
+          {/* Thông tin Lớp và Trường - Để chữ mờ hơn (slate-300) và dãn cách cực rộng để tạo chiều sâu */}
+          <div className="pt-4 text-[12px] font-bold text-black uppercase tracking-[0.4em]">
+            Trường Đại Học Công Nghệ Sài Gòn - AI cơ bản và ứng dụng
+          </div>
+          
+        </div>
+      </footer>
     </div>
   );
 }

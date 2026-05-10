@@ -48,6 +48,13 @@ def analyze_food():
                 "error": "Không nhận được ảnh"
             }), 400
 
+        profile_text = (
+            f"Tuổi: {user_profile.get('age')}, "
+            f"Giới tính: {user_profile.get('gender')}, "
+            f"Cân nặng: {user_profile.get('weight')}kg, "
+            f"Chiều cao: {user_profile.get('height')}cm"
+        )
+
         # Xóa phần base64 header
         if ',' in image_b64:
             image_b64 = image_b64.split(',')[1]
@@ -55,94 +62,23 @@ def analyze_food():
         # Decode ảnh
         image_bytes = base64.b64decode(image_b64)
 
-        # =========================
-        # PROFILE
-        # =========================
-        profile_text = f"""
-        Giới tính: {user_profile.get('gender', 'Nam')},
-        Tuổi: {user_profile.get('age', 20)},
-        Cân nặng: {user_profile.get('weight', 60)}kg,
-        Chiều cao: {user_profile.get('height', 170)}cm
-        """
-
-        # =========================
-        # PROMPT
-        # =========================
         prompt = f"""
-        Bạn là AI OCR + Chuyên gia phân tích dinh dưỡng.
+        Bạn là Chuyên gia Dinh dưỡng AI. Hãy nhìn bức ảnh nhãn dán thực phẩm này và đối chiếu với thể trạng người dùng sau:
+        THỂ TRẠNG NGƯỜI DÙNG: {profile_text}
+        
+        LUẬT PHÂN TÍCH (BẮT BUỘC TUÂN THỦ THEO THỨ TỰ):
+        1. PHÂN TÍCH THỰC PHẨM TRƯỚC: Bắt buộc trích xuất (hoặc tự ước tính) các chỉ số calo, đường, đạm, béo... của CHÍNH SẢN PHẨM TRONG ẢNH. Khối "stats" tuyệt đối chỉ chứa thông tin của món ăn, không được nhầm lẫn với nhu cầu calo của người dùng.
+        2. ĐỐI CHIẾU & TƯ VẤN: Dựa vào các chỉ số thực phẩm vừa tìm được, so sánh với chiều cao, cân nặng, giới tính của người dùng để đánh giá. (Ví dụ: cân nặng này kết hợp với việc học tập hoặc đi làm thêm di chuyển nhiều thì bù đắp calo thế nào cho hợp lý).
+        3. ĐỀ XUẤT THAY THẾ: Gợi ý vài món lành mạnh hơn nếu sản phẩm này không tốt.
+        4. Dịch sang tiếng Việt.
 
-        NHIỆM VỤ BẮT BUỘC:
-
-        1. PHẢI QUÉT HÌNH ẢNH
-        - Hãy thực hiện OCR toàn bộ chữ trong ảnh.
-        - Đọc tất cả:
-        + bảng Nutrition Facts
-        + thành phần
-        + calories
-        + sugar
-        + protein
-        + fat
-        + carb
-        + calcium
-        + sodium
-        + serving size
-        + khối lượng
-
-        2. ƯU TIÊN THÔNG SỐ TRÊN NHÃN
-        - Phải lấy số liệu trực tiếp từ hình ảnh.
-        - KHÔNG được chỉ nhìn bao bì hoặc tên sản phẩm.
-        - KHÔNG tự đoán dinh dưỡng.
-        - KHÔNG dùng kiến thức có sẵn.
-        - Nếu ảnh không thấy rõ thì ghi:
-        "Không xác định"
-
-        3. THỂ TRẠNG NGƯỜI DÙNG
-        {profile_text}
-
-        4. ĐÁNH GIÁ
-        - So sánh thông số dinh dưỡng đọc được từ ảnh
-        với thể trạng người dùng.
-
-        5. GỢI Ý
-        - Đưa ra 2 món thay thế lành mạnh hơn.
-
-        6. NGÔN NGỮ
-        - Toàn bộ bằng tiếng Việt.
-
-        7. FORMAT
-        - Chỉ trả JSON hợp lệ.
-        - Không markdown.
-        - Không giải thích thêm.
-
-        JSON FORMAT:
-
+        Trả về DUY NHẤT mã JSON chuẩn:
         {{
             "product_name": "Tên sản phẩm",
-
-            "ocr_text": "Toàn bộ chữ đọc được từ ảnh",
-
-            "stats": {{
-                "serving_size": "...",
-                "calories": "...",
-                "sugar": "...",
-                "protein": "...",
-                "calcium": "...",
-                "fat": "...",
-                "carb": "...",
-                "sodium": "..."
-            }},
-
+            "stats": {{"calories": "...", "sugar": "...", "protein": "...", "calcium": "...", "fat": "...", "carb": "..."}},
             "health_score": "1-10",
-
-            "short_advice": [
-                "...",
-                "..."
-            ],
-
-            "alternatives": [
-                "...",
-                "..."
-            ]
+            "short_advice": ["Lời khuyên 1 (đối chiếu thể trạng)", "Lời khuyên 2"],
+            "alternatives": ["Món thay thế"]
         }}
         """
 
@@ -150,7 +86,7 @@ def analyze_food():
         # GỌI GEMINI
         # =========================
         response = client.models.generate_content(
-            model="gemini-3.1-flash-lite",
+            model="gemini-2.5-flash",
             contents=[
                 prompt,
                 types.Part.from_bytes(
