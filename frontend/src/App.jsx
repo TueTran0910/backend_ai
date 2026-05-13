@@ -23,6 +23,7 @@ function App() {
     height: '170',
     gender: 'Nam'
   });
+  const [errors, setErrors] = useState({ age: '', weight: '', height: '' });
 
   //const api = "https://backend-ai-rbej.onrender.com"
   const api = "http://127.0.0.1:5000";
@@ -31,9 +32,20 @@ function App() {
   // HANDLE INPUT
   // =========================
   const handleInputChange = (e) => {
+    let { name, value } = e.target;
+
+    // Chỉ áp dụng bộ lọc cho các trường cần nhập số dương
+    if (['age', 'weight', 'height'].includes(name)) {
+      // 1. Dùng Regex \D để xóa sạch mọi ký tự không phải số (chữ, dấu -, ., e...)
+      value = value.replace(/\D/g, '');
+
+      // 2. Chặn việc nhập số 0 ở vị trí đầu tiên
+      if (value.startsWith('0')) value = value.substring(1);
+    }
+
     setUserProfile({
       ...userProfile,
-      [e.target.name]: e.target.value
+      [name]: value
     });
   };
 
@@ -52,7 +64,12 @@ function App() {
     localStorage.setItem('scanHistory', JSON.stringify(updatedHistory));
   };
 
-
+  const blockInvalidChar = (e) => {
+    // Chặn các phím gây ra số âm, số thập phân hoặc số mũ
+    if (['e', 'E', '+', '-', '.', ','].includes(e.key)) {
+      e.preventDefault();
+    }
+  };
 
   // =========================
   // OFFLINE PARSER
@@ -155,8 +172,28 @@ function App() {
   // =========================
   const handleScan = async () => {
 
+    let newErrors = { age: '', weight: '', height: '' };
+    let isValid = true;
+
+    if (!userProfile.age || userProfile.age <= 0) {
+      newErrors.age = "Nhập tuổi hợp lệ hoặc không được để trống!";
+      isValid = false;
+    }
+    if (!userProfile.weight || userProfile.weight <= 0) {
+      newErrors.weight = "Nhập cân nặng hợp lệ hoặc không được để trống!";
+      isValid = false;
+    }
+    if (!userProfile.height || userProfile.height <= 0) {
+      newErrors.height = "Nhập chiều cao hợp lệ hoặc không được để trống!";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+
+    if (!isValid) return;
+
     if (!imageFile) {
-      alert("Chọn ảnh trước");
+      alert("Xin vui lòng chọn hình ảnh để kiểm tra!");
       return;
     }
 
@@ -280,22 +317,85 @@ function App() {
         </header>
 
         {/* Bảng nhập thông số thể trạng */}
-        <div className="bg-slate-50 p-4 rounded-2xl mb-6 border border-slate-100">
-          <h3 className="text-[10px] font-black text-slate-500 uppercase mb-3 tracking-widest">Thông số thể trạng</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <input type="number" name="age" value={userProfile.age} onChange={handleInputChange} placeholder="Tuổi" className="p-2 text-sm font-bold border rounded-xl text-center outline-none focus:border-green-400" />
-            <select name="gender" value={userProfile.gender} onChange={handleInputChange} className="p-2 text-sm font-bold border rounded-xl text-center outline-none focus:border-green-400 bg-white">
-              <option value="Nam">Nam</option>
-              <option value="Nữ">Nữ</option>
-            </select>
-            <div className="relative">
-              <input type="number" name="weight" value={userProfile.weight} onChange={handleInputChange} placeholder="Nặng" className="w-full p-2 text-sm font-bold border rounded-xl text-center outline-none focus:border-green-400" />
-              <span className="absolute right-3 top-2 text-xs text-slate-400 font-bold">kg</span>
+        <div className="bg-slate-50 p-5 rounded-[2rem] mb-6 border border-slate-100 shadow-inner">
+          <h3 className="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-[0.2em] ml-1">
+            Thông số thể trạng
+          </h3>
+          
+          {/* Grid chính luôn cố định 2 cột */}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-5">
+            
+            {/* KHỐI TUỔI */}
+            <div className="flex flex-col relative">
+              <input 
+                type="number" name="age" min="1" 
+                onKeyDown={blockInvalidChar} 
+                value={userProfile.age} 
+                onChange={handleInputChange} 
+                placeholder="Tuổi" 
+                className={`p-3 text-sm font-bold border rounded-2xl text-center outline-none transition-all ${errors.age ? 'border-red-400 bg-red-50/50' : 'focus:border-green-400 border-slate-200'}`} 
+              />
+              <span className="absolute right-10 top-3.5 text-[10px] text-slate-500 font-black uppercase">Tuổi</span>
+              {errors.age && (
+                <span className="text-[7px] text-red-500 font-black mt-1.5 ml-2 uppercase tracking-tighter animate-in fade-in slide-in-from-top-1">
+                  ⚠️ {errors.age}
+                </span>
+              )}
             </div>
-            <div className="relative">
-              <input type="number" name="height" value={userProfile.height} onChange={handleInputChange} placeholder="Cao" className="w-full p-2 text-sm font-bold border rounded-xl text-center outline-none focus:border-green-400" />
-              <span className="absolute right-3 top-2 text-xs text-slate-400 font-bold">cm</span>
+
+            {/* KHỐI GIỚI TÍNH */}
+            <div className="flex flex-col">
+              <select 
+                name="gender" 
+                value={userProfile.gender} 
+                onChange={handleInputChange} 
+                className="p-3 text-sm font-bold border border-slate-200 rounded-2xl text-center outline-none focus:border-green-400 bg-white appearance-none cursor-pointer"
+              >
+                <option value="Nam">Nam</option>
+                <option value="Nữ">Nữ</option>
+              </select>
             </div>
+
+            {/* KHỐI CÂN NẶNG */}
+            <div className="flex flex-col relative">
+              <div className="relative">
+                <input 
+                  type="number" name="weight" min="1" 
+                  onKeyDown={blockInvalidChar} 
+                  value={userProfile.weight} 
+                  onChange={handleInputChange} 
+                  placeholder="Nặng" 
+                  className={`w-full p-3 text-sm font-bold border rounded-2xl text-center outline-none transition-all ${errors.weight ? 'border-red-400 bg-red-50/50' : 'focus:border-green-400 border-slate-200'}`} 
+                />
+                <span className="absolute right-10 top-3.5 text-[10px] text-slate-500 font-black uppercase">kg</span>
+              </div>
+              {errors.weight && (
+                <span className="text-[7px] text-red-500 font-black mt-1.5 ml-2 uppercase tracking-tighter animate-in fade-in slide-in-from-top-1">
+                  ⚠️ {errors.weight}
+                </span>
+              )}
+            </div>
+
+            {/* KHỐI CHIỀU CAO */}
+            <div className="flex flex-col relative">
+              <div className="relative">
+                <input 
+                  type="number" name="height" min="1" 
+                  onKeyDown={blockInvalidChar} 
+                  value={userProfile.height} 
+                  onChange={handleInputChange} 
+                  placeholder="Cao" 
+                  className={`w-full p-3 text-sm font-bold border rounded-2xl text-center outline-none transition-all ${errors.height ? 'border-red-400 bg-red-50/50' : 'focus:border-green-400 border-slate-200'}`} 
+                />
+                <span className="absolute right-10 top-3.5 text-[10px] text-slate-500 font-black uppercase">cm</span>
+              </div>
+              {errors.height && (
+                <span className="text-[7px] text-red-500 font-black mt-1.5 ml-2 uppercase tracking-tighter animate-in fade-in slide-in-from-top-1">
+                  ⚠️ {errors.height}
+                </span>
+              )}
+            </div>
+
           </div>
         </div>
 
